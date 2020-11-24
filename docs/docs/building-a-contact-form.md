@@ -43,6 +43,78 @@ Each method detailed below will start with the following contact form:
 
 ## Form submission options in Gatsby
 
+### Formspree
+
+Formspree offers a generous free-tier service for handling form submissions on static sites. This makes it a great tool for having form submissions sent directly to an email address, with very little setup required.
+
+Since Gatsby is built on top of React, you can use a [React Hook](https://reactjs.org/docs/hooks-intro.html) to submit directly to Formspree.
+
+> 💡 You'll need the Formspree React library and React 16.8.0 or later to use `useForm`.
+>
+> 📦 `npm install react@^16.8.0 @formspree/react`
+
+
+```jsx:title=src/pages/contact.js
+import { useForm } from '@formspree/react'
+
+export default function ContactForm() {
+  const [state, handleSubmit] = useForm('{your-form-id}')
+  if (state.succeeded) {
+    return <div>Thank you for contacting me!</div>;
+  }
+  return (
+    <form onSubmit={handleSubmit}>
+      <label htmlFor="email">Email</label>
+      <input id="email" type="email" name="email" />
+      <label htmlFor="message">Message</label>
+      <input id="message" type="text" name="message" />
+      <button disabled={state.submitting}>Sign up</button>
+    </form>
+  )
+}
+```
+
+If you want to programmatically deploy forms, you can do so with the Formspree CLI.
+
+> 📦 `npm install -g @formspree/cli`
+
+You'll need to set up a `formspree.json` file in your project root that contains 
+```json:title=formspree.json
+{
+    "forms": {
+      "signupForm": {
+        "name": "Contact Form",
+        "fields": {
+          "email": { "type": "email", "required": true },
+          "message": { "type": "text", "required": true }
+        },
+        "actions": [
+          { "type": "email", "to": "hello@example.com" }
+        ],
+        "allowExtraFields": false
+      }
+    }
+  }
+  ```
+
+Now you need to deploy your configuration (or add it as part of your deploy command on productions sites)
+
+  > `formspree deploy -k <your-deploy-key>`
+
+To pass your project ID, you can use the [gatsby-browser.js](/docs/api-files-gatsby-browser/) file to wrap the root elements.
+
+```jsx:title=gatsby-browser.js
+import React from "react"
+
+import { FormspreeProvider } from "@formspree/react"
+
+export const wrapRootElement = ({ element }) => (
+    <FormspreeProvider project={"{your-project-id}"}>{element}</FormspreeProvider>
+  )
+```
+
+You can find more information on the registration process or setup [on their website](https://formspree.io/).
+
 ### Getform
 
 Getform is a form backend platform which offers a free-plan for handling form submissions on static sites. Begin by creating a form on your Gatsby site that you can receive submissions from. When creating the form, direct the HTTP POST method to the Getform, by placing the `name` attributes for the fields you want to make visible. (name, email, message etc.)
@@ -87,33 +159,6 @@ Setting this up only involves adding a few form attributes:
 Now, all submissions to your form will appear in the Forms tab of your site dashboard. By adding the form attribute `netlify-honeypot="bot-field"` and a corresponding hidden input, Netlify will know to quietly reject any spam submissions you may receive.
 
 More information on Netlify Forms can be found [on their website](https://www.netlify.com/docs/form-handling/).
-
-### Formspree
-
-Formspree offers a generous free-tier service for handling form submissions on static sites. This makes it a great tool for having form submissions sent directly to an email address of your choosing, with very little setup required.
-
-In order to begin leveraging Formspree's features, you must add a form action directing the HTTP POST method to the Formspree API (substituting your chosen email), as well as changing the `name` attribute of the email input to `name="_replyto"`.
-
-```jsx:title=src/pages/contact.js
-<form method="post" action="https://formspree.io/email@domain.tld">
-  ...
-  <label>
-    Email
-    <input type="email" name="_replyto" />
-  </label>
-  ...
-</form>
-```
-
-Once you've made the changes you can submit your own form for the first time and register using the email Formspree will send you, and all subsequent form submissions will be sent to your email address. You can find more information on the registration process or setup [on their website](https://formspree.io/).
-
-All forms set up in this way come with reCAPTCHA by default, but you can also enable Honeypot spam filtering by adding a hidden input element with the `name="_gotcha"` field.
-
-```jsx
-<input type="text" name="_gotcha" style="display:none" />
-```
-
-Because the input is hidden, Formspree will know that only a bot could have made the submission and it will be silently ignored!
 
 ### Run your own server
 
